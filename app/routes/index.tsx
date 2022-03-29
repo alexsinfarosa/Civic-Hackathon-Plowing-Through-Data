@@ -1,137 +1,119 @@
-import { Link } from "remix";
-import { useOptionalUser } from "~/utils";
+import { addHours } from "date-fns";
+import format from "date-fns/format";
+import mapboxStyles from "mapbox-gl/dist/mapbox-gl.css";
+import * as React from "react";
+import Map, { Layer, Source } from "react-map-gl";
+import {
+  LinksFunction,
+  LoaderFunction,
+  MetaFunction,
+  useLoaderData,
+} from "remix";
+import { dataLayer } from "~/components/map-style";
+import { updateLT } from "~/utils";
+import geojson from "../../assets/data.json";
+import useInterval from "../hooks/useInterval";
+import { json } from "remix";
 
-export default function Index() {
-  const user = useOptionalUser();
+export const links: LinksFunction = () => {
+  return [
+    {
+      rel: "stylesheet",
+      href: mapboxStyles,
+    },
+  ];
+};
+
+export const meta: MetaFunction = () => {
+  return {
+    title: "Home Page",
+    description: "Snow Plow Coverage Time Lapse",
+  };
+};
+
+export const loader: LoaderFunction = async () => {
+  return json({ MAPBOX_API_TOKEN: process.env.MAPBOX_API_TOKEN });
+};
+
+export default function IndexPage() {
+  const { MAPBOX_API_TOKEN } = useLoaderData();
+  const [viewState, setViewState] = React.useState({
+    latitude: 43.035,
+    longitude: -76.14,
+    zoom: 11.9,
+  });
+  const [hourInterval, setHourInterval] = React.useState<number>(0);
+  const [date, setDate] = React.useState<Date>(new Date(2017, 2, 13));
+
+  const data = React.useMemo(
+    // @ts-ignore.
+    () => geojson && updateLT(geojson, (f) => f.properties?.LT[hourInterval]),
+    [hourInterval]
+  );
+
+  useInterval(() => {
+    if (hourInterval < 47) {
+      setHourInterval(hourInterval + 1);
+      setDate(addHours(date, 2));
+    }
+  }, 2000);
+
   return (
-    <main className="relative min-h-screen bg-white sm:flex sm:items-center sm:justify-center">
-      <div className="relative sm:pb-16 sm:pt-8">
-        <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
-          <div className="relative shadow-xl sm:overflow-hidden sm:rounded-2xl">
-            <div className="absolute inset-0">
-              <img
-                className="h-full w-full object-cover"
-                src="https://user-images.githubusercontent.com/1500684/157774694-99820c51-8165-4908-a031-34fc371ac0d6.jpg"
-                alt="Sonic Youth On Stage"
-              />
-              <div className="absolute inset-0 bg-[color:rgba(254,204,27,0.5)] mix-blend-multiply" />
-            </div>
-            <div className="lg:pb-18 relative px-4 pt-16 pb-8 sm:px-6 sm:pt-24 sm:pb-14 lg:px-8 lg:pt-32">
-              <h1 className="text-center text-6xl font-extrabold tracking-tight sm:text-8xl lg:text-9xl">
-                <span className="block uppercase text-yellow-500 drop-shadow-md">
-                  Indie Stack
-                </span>
-              </h1>
-              <p className="mx-auto mt-6 max-w-lg text-center text-xl text-white sm:max-w-3xl">
-                Check the README.md file for instructions on how to get this
-                project deployed.
-              </p>
-              <div className="mx-auto mt-10 max-w-sm sm:flex sm:max-w-none sm:justify-center">
-                {user ? (
-                  <Link
-                    to="/notes"
-                    className="flex items-center justify-center rounded-md border border-transparent bg-white px-4 py-3 text-base font-medium text-yellow-700 shadow-sm hover:bg-yellow-50 sm:px-8"
-                  >
-                    View Notes for {user.email}
-                  </Link>
-                ) : (
-                  <div className="space-y-4 sm:mx-auto sm:inline-grid sm:grid-cols-2 sm:gap-5 sm:space-y-0">
-                    <Link
-                      to="/join"
-                      className="flex items-center justify-center rounded-md border border-transparent bg-white px-4 py-3 text-base font-medium text-yellow-700 shadow-sm hover:bg-yellow-50 sm:px-8"
-                    >
-                      Sign up
-                    </Link>
-                    <Link
-                      to="/login"
-                      className="flex items-center justify-center rounded-md bg-yellow-500 px-4 py-3 font-medium text-white hover:bg-yellow-600  "
-                    >
-                      Log In
-                    </Link>
-                  </div>
-                )}
-              </div>
-              <a href="https://remix.run">
-                <img
-                  src="https://user-images.githubusercontent.com/1500684/158298926-e45dafff-3544-4b69-96d6-d3bcc33fc76a.svg"
-                  alt="Remix"
-                  className="mx-auto mt-16 w-full max-w-[12rem] md:max-w-[16rem]"
-                />
-              </a>
-            </div>
-          </div>
+    <div className="py-6">
+      <div className="mx-auto flex max-w-7xl items-center justify-between px-4 sm:px-6 md:px-8">
+        <h1 className="text-center text-2xl font-semibold text-slate-900 sm:text-left">
+          Snow Plow Coverage Time Lapse
+        </h1>
+      </div>
+      <div className="mx-auto mt-10 max-w-7xl px-4 text-center text-3xl text-slate-700 sm:px-6 md:px-8">
+        <span className="mr-2">{format(date, "yyyy, MMMM do")}</span>
+        <span className="animate-pulse font-extrabold underline">
+          {format(date, "h aaa")}
+        </span>
+      </div>
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 md:px-8">
+        <div className="mt-10 h-[800px] w-full rounded-lg bg-slate-50">
+          <Map
+            {...viewState}
+            mapStyle="mapbox://styles/mapbox/light-v10"
+            mapboxAccessToken={MAPBOX_API_TOKEN}
+            interactiveLayerIds={["data"]}
+            onMove={(evt) => setViewState(evt.viewState)}
+          >
+            <Source id="data" type="geojson" data={data}>
+              <Layer {...dataLayer} />
+            </Source>
+          </Map>
         </div>
 
-        <div className="mx-auto max-w-7xl py-2 px-4 sm:px-6 lg:px-8">
-          <div className="mt-6 flex flex-wrap justify-center gap-8">
-            {[
-              {
-                src: "https://user-images.githubusercontent.com/1500684/157764397-ccd8ea10-b8aa-4772-a99b-35de937319e1.svg",
-                alt: "Fly.io",
-                href: "https://fly.io",
-              },
-              {
-                src: "https://user-images.githubusercontent.com/1500684/157764395-137ec949-382c-43bd-a3c0-0cb8cb22e22d.svg",
-                alt: "SQLite",
-                href: "https://sqlite.org",
-              },
-              {
-                src: "https://user-images.githubusercontent.com/1500684/157764484-ad64a21a-d7fb-47e3-8669-ec046da20c1f.svg",
-                alt: "Prisma",
-                href: "https://prisma.io",
-              },
-              {
-                src: "https://user-images.githubusercontent.com/1500684/157764276-a516a239-e377-4a20-b44a-0ac7b65c8c14.svg",
-                alt: "Tailwind",
-                href: "https://tailwindcss.com",
-              },
-              {
-                src: "https://user-images.githubusercontent.com/1500684/157764454-48ac8c71-a2a9-4b5e-b19c-edef8b8953d6.svg",
-                alt: "Cypress",
-                href: "https://www.cypress.io",
-              },
-              {
-                src: "https://user-images.githubusercontent.com/1500684/157772386-75444196-0604-4340-af28-53b236faa182.svg",
-                alt: "MSW",
-                href: "https://mswjs.io",
-              },
-              {
-                src: "https://user-images.githubusercontent.com/1500684/157772447-00fccdce-9d12-46a3-8bb4-fac612cdc949.svg",
-                alt: "Vitest",
-                href: "https://vitest.dev",
-              },
-              {
-                src: "https://user-images.githubusercontent.com/1500684/157772662-92b0dd3a-453f-4d18-b8be-9fa6efde52cf.png",
-                alt: "Testing Library",
-                href: "https://testing-library.com",
-              },
-              {
-                src: "https://user-images.githubusercontent.com/1500684/157772934-ce0a943d-e9d0-40f8-97f3-f464c0811643.svg",
-                alt: "Prettier",
-                href: "https://prettier.io",
-              },
-              {
-                src: "https://user-images.githubusercontent.com/1500684/157772990-3968ff7c-b551-4c55-a25c-046a32709a8e.svg",
-                alt: "ESLint",
-                href: "https://eslint.org",
-              },
-              {
-                src: "https://user-images.githubusercontent.com/1500684/157773063-20a0ed64-b9f8-4e0b-9d1e-0b65a3d4a6db.svg",
-                alt: "TypeScript",
-                href: "https://typescriptlang.org",
-              },
-            ].map((img) => (
-              <a
-                key={img.href}
-                href={img.href}
-                className="flex h-16 w-32 justify-center p-1 grayscale transition hover:grayscale-0 focus:grayscale-0"
-              >
-                <img alt={img.alt} src={img.src} />
-              </a>
-            ))}
-          </div>
+        <div className="prose prose-sm mx-auto mt-8">
+          <p>
+            In a real scenario, the map will display where snow plows will be
+            located at current time.
+          </p>
+          <p>
+            In our case, since we are using a static dataset, the map provides a
+            graphical display of where snow plows have been during the time
+            period (2017, March 13th 00:00 AM - 2017, March 16th 10:00 PM).
+          </p>
+
+          <p>
+            The date at the top of the screen changes the time forward in 2-hour
+            increments.
+          </p>
+
+          <p>
+            The color of the streets is an indicator of how long it has been
+            since a plow was present on that street.
+          </p>
+
+          <p>
+            Please note that the map does not indicate what sort of activity, if
+            any, the plow performed while on a particular street, only that it
+            was present on that street.
+          </p>
         </div>
       </div>
-    </main>
+    </div>
   );
 }

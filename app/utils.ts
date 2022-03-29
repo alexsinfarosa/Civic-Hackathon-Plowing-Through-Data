@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { useMatches } from "remix";
 
 import type { User } from "~/models/user.server";
-
+import type GeoJSON from "geojson";
 /**
  * This base hook is used in other hooks to quickly search for specific data
  * across all loader data using useMatches.
@@ -44,4 +44,23 @@ export function useUser(): User {
 
 export function validateEmail(email: unknown): email is string {
   return typeof email === "string" && email.length > 3 && email.includes("@");
+}
+
+
+export function updateLT(
+  featureCollection: GeoJSON.FeatureCollection<GeoJSON.Geometry>,
+  accessor: (f: GeoJSON.Feature<GeoJSON.Geometry>) => number | string
+): GeoJSON.FeatureCollection<GeoJSON.Geometry> {
+  const { features } = featureCollection;
+  return {
+    type: "FeatureCollection",
+    features: features.map((f) => {
+      const value = accessor(f);
+      const properties = {
+        ...f.properties,
+        value,
+      };
+      return { ...f, properties };
+    }),
+  };
 }
