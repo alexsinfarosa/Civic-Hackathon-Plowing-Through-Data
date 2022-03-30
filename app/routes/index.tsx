@@ -61,7 +61,7 @@ export default function IndexPage() {
   return (
     <div className="py-6">
       <div className="mx-auto flex max-w-7xl items-center justify-between px-4 sm:px-6 md:px-8">
-        <h1 className="text-center text-2xl font-semibold text-slate-900 sm:text-left">
+        <h1 className="text-center text-2xl font-extrabold tracking-wide text-slate-600 sm:text-left sm:text-3xl">
           Snow Plow Coverage Time Lapse
         </h1>
       </div>
