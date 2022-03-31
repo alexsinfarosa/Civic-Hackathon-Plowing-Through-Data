@@ -1,5 +1,5 @@
 import type { LineLayer } from "react-map-gl";
-import colors from "tailwindcss/colors";
+// import colors from "tailwindcss/colors";
 
 const case1 = ["==", ["get", "value"], "M"];
 const case2 = [
@@ -21,14 +21,19 @@ export const dataLayer: LineLayer = {
     "line-color": [
       "case",
       case1,
-      colors.slate[300],
+      // colors.slate[300],
+      "#cbd5e1",
       case2,
-      colors.green[500],
+      // colors.green[500],
+      "#22c55e",
       case3,
-      colors.amber[500],
+      // colors.amber[500],
+      "#f59e0b",
       case4,
-      colors.red[500],
-      colors.white,
+      // colors.red[500],
+      "#ef4444",
+      // colors.white,
+      "#ffffff",
     ],
     "line-width": 1.2,
     "line-opacity": 1,
